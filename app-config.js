@@ -1,5 +1,5 @@
 
 window.MAXIM_CONFIG = {
-  url: "ISI_URL_SUPABASE_NANTI",
-  publishableKey: "ISI_KEY_SUPABASE_NANTI"
+  url: "https://hyvtperbpithwqevasxo.supabase.co/rest/v1/",
+  publishableKey: "sb_publishable_m0plYnXLSBoROFeUae7GXQ_mS3jCKKj"
 };
