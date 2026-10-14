@@ -598,17 +598,5 @@
   start();
 })();
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function () {
-    navigator.serviceWorker.register("/maxim-tracker/sw.js")
-      .then(function () {
-        console.log("MAXIM TRACKER siap digunakan sebagai PWA");
-      })
-      .catch(function (error) {
-        console.error("Service Worker gagal:", error);
-      });
-  });
-}
-</script>
 </body>
 </html>
