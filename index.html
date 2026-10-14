@@ -1,0 +1,596 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10243a">
+  <title>MAXIM TRACKER</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Arial, sans-serif;
+      background: #f1f5f9; color: #172b4d;
+    }
+    header {
+      background: #10243a; color: white;
+      padding: 22px 16px; text-align: center;
+    }
+    header h1 { margin: 0 0 6px; font-size: 25px; }
+    header p { margin: 0; color: #b9d4e9; }
+    main { max-width: 900px; margin: auto; padding: 16px; }
+    .card {
+      background: white; padding: 18px; margin-bottom: 16px;
+      border-radius: 14px; box-shadow: 0 3px 12px #172b4d10;
+    }
+    h2 { margin-top: 0; font-size: 19px; }
+    label { display: block; font-size: 13px; margin-bottom: 5px; }
+    input, select, textarea, button {
+      width: 100%; padding: 11px; border-radius: 8px;
+      border: 1px solid #cbd5e1; font: inherit;
+    }
+    input, select, textarea { margin-bottom: 12px; background: white; }
+    button {
+      border: 0; background: #087f5b; color: white;
+      font-weight: bold; cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: wait; }
+    button.secondary { background: #334e68; }
+    button.danger { background: #b42318; }
+    button.small { width: auto; padding: 7px 9px; font-size: 12px; margin: 2px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat { padding: 14px; border-radius: 10px; background: #edf7f3; }
+    .stat span { display: block; font-size: 12px; color: #52677d; }
+    .stat strong { display: block; margin-top: 7px; font-size: 19px; overflow-wrap: anywhere; }
+    .muted { color: #64748b; font-size: 13px; }
+    .notice { padding: 11px; border-radius: 8px; background: #eff6ff; margin-bottom: 12px; }
+    .hidden { display: none !important; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; white-space: nowrap; }
+    th { background: #f8fafc; }
+    .actions { display: flex; gap: 5px; }
+    footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; }
+    @media (max-width: 540px) {
+      .grid, .stats { grid-template-columns: 1fr; }
+      main { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🏍️ MAXIM TRACKER</h1>
+  <p>Catat penghasilan, kendalikan pengeluaran</p>
+</header>
+
+<main>
+  <section id="authCard" class="card">
+    <h2>Masuk ke akun</h2>
+    <div id="authMessage" class="notice hidden"></div>
+    <form id="authForm">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required>
+      <label for="password">Password (minimal 6 karakter)</label>
+      <input id="password" type="password" minlength="6"
+        autocomplete="current-password" required>
+      <div class="grid">
+        <button type="submit">Login</button>
+        <button type="button" id="signupBtn" class="secondary">Daftar akun</button>
+      </div>
+    </form>
+    <p class="muted">Gunakan email dan password milikmu sendiri.</p>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="card">
+      <div class="grid">
+        <div>
+          <h2>Dashboard</h2>
+          <div id="account" class="muted"></div>
+        </div>
+        <button id="logoutBtn" class="secondary">Keluar</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><span>Total pendapatan kotor</span><strong id="grossTotal">Rp0</strong></div>
+        <div class="stat"><span>Total pengeluaran</span><strong id="expenseTotal">Rp0</strong></div>
+        <div class="stat"><span>Pendapatan bersih</span><strong id="netTotal">Rp0</strong></div>
+        <div class="stat"><span>Target hari ini</span><strong id="targetToday">Rp0</strong></div>
+      </div>
+      <p id="targetProgress" class="muted"></p>
+    </div>
+
+    <div class="card">
+      <h2>Target pendapatan</h2>
+      <form id="settingsForm">
+        <div class="grid">
+          <div>
+            <label for="weekdayTarget">Target Senin–Jumat (Rp)</label>
+            <input id="weekdayTarget" type="number" min="0" step="1000" value="120000" required>
+          </div>
+          <div>
+            <label for="weekendTarget">Target Sabtu–Minggu (Rp)</label>
+            <input id="weekendTarget" type="number" min="0" step="1000" value="250000" required>
+          </div>
+        </div>
+        <button type="submit">Simpan target</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 id="recordTitle">Tambah catatan narik</h2>
+      <form id="recordForm">
+        <div class="grid">
+          <div>
+            <label for="rideDate">Tanggal</label>
+            <input id="rideDate" type="date" required>
+          </div>
+          <div>
+            <label for="serviceType">Layanan</label>
+            <select id="serviceType">
+              <option>Maxim Bike</option>
+              <option>Maxim Food</option>
+              <option>Maxim Delivery</option>
+              <option>Campuran</option>
+            </select>
+          </div>
+          <div>
+            <label for="startTime">Jam mulai</label>
+            <input id="startTime" type="time" required>
+          </div>
+          <div>
+            <label for="endTime">Jam selesai</label>
+            <input id="endTime" type="time" required>
+          </div>
+          <div>
+            <label for="gross">Pendapatan kotor (Rp)</label>
+            <input id="gross" type="number" min="0" step="100" value="0" required>
+          </div>
+          <div>
+            <label for="appFee">Potongan aplikasi (Rp)</label>
+            <input id="appFee" type="number" min="0" step="100" value="0" required>
+          </div>
+          <div>
+            <label for="fuel">Bensin (Rp)</label>
+            <input id="fuel" type="number" min="0" step="100" value="0" required>
+          </div>
+          <div>
+            <label for="food">Makan dan minum (Rp)</label>
+            <input id="food" type="number" min="0" step="100" value="0" required>
+          </div>
+          <div>
+            <label for="maintenance">Cadangan servis (Rp)</label>
+            <input id="maintenance" type="number" min="0" step="100" value="0" required>
+          </div>
+          <div>
+            <label for="other">Pengeluaran lain (Rp)</label>
+            <input id="other" type="number" min="0" step="100" value="0" required>
+          </div>
+          <div>
+            <label for="distance">Jarak tempuh (km)</label>
+            <input id="distance" type="number" min="0" step="0.1" value="0" required>
+          </div>
+        </div>
+        <label for="note">Catatan (opsional, maksimal 160 karakter)</label>
+        <textarea id="note" maxlength="160" rows="2"></textarea>
+        <button id="saveRecordBtn" type="submit">Simpan catatan</button>
+        <button id="cancelEditBtn" type="button" class="secondary hidden" style="margin-top:8px">Batal edit</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Riwayat narik</h2>
+      <div class="grid">
+        <div>
+          <label for="filterMonth">Filter bulan</label>
+          <input id="filterMonth" type="month">
+        </div>
+        <div style="align-self:end">
+          <button id="csvBtn" type="button" class="secondary">Ekspor CSV</button>
+        </div>
+      </div>
+      <p id="historySummary" class="muted"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th><th>Jam</th><th>Kotor</th>
+              <th>Pengeluaran</th><th>Bersih</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyHistory" class="muted">Belum ada catatan.</p>
+    </div>
+  </section>
+
+  <div id="appMessage" class="notice hidden" role="status"></div>
+</main>
+
+<footer>MAXIM TRACKER • Simpan catatanmu secara rutin</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./app-config.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const authCard = $("authCard");
+  const app = $("app");
+  let client;
+  let currentUser = null;
+  let records = [];
+  let editingId = null;
+  let settings = { weekday_target: 120000, weekend_target: 250000 };
+
+  const money = value => new Intl.NumberFormat("id-ID", {
+    style: "currency", currency: "IDR", maximumFractionDigits: 0
+  }).format(Number(value || 0));
+
+  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[ch]);
+
+  function message(id, text) {
+    $(id).textContent = text;
+    $(id).classList.remove("hidden");
+  }
+  function clearMessage(id) {
+    $(id).textContent = "";
+    $(id).classList.add("hidden");
+  }
+  function appNotice(text) { message("appMessage", text); }
+
+  function localDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  function setSignedIn(user) {
+    currentUser = user;
+    authCard.classList.toggle("hidden", !!user);
+    app.classList.toggle("hidden", !user);
+    $("account").textContent = user ? "Akun: " + user.email : "";
+  }
+
+  function numeric(id) {
+    return Number($(id).value || 0);
+  }
+
+  function recordValues() {
+    return {
+      user_id: currentUser.id,
+      ride_date: $("rideDate").value,
+      service_type: $("serviceType").value,
+      start_time: $("startTime").value,
+      end_time: $("endTime").value,
+      gross: numeric("gross"),
+      app_fee: numeric("appFee"),
+      fuel: numeric("fuel"),
+      food: numeric("food"),
+      maintenance: numeric("maintenance"),
+      other: numeric("other"),
+      distance_km: numeric("distance"),
+      note: $("note").value.trim()
+    };
+  }
+
+  function expense(r) {
+    return Number(r.app_fee) + Number(r.fuel) + Number(r.food)
+      + Number(r.maintenance) + Number(r.other);
+  }
+  function net(r) { return Number(r.gross) - expense(r); }
+
+  async function loadSettings() {
+    const { data, error } = await client.from("user_settings")
+      .select("weekday_target,weekend_target")
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (error) throw error;
+
+    if (data) {
+      settings = data;
+    } else {
+      const { data: created, error: insertError } = await client
+        .from("user_settings")
+        .upsert({
+          user_id: currentUser.id,
+          weekday_target: 120000,
+          weekend_target: 250000
+        }, { onConflict: "user_id" })
+        .select("weekday_target,weekend_target").single();
+      if (insertError) throw insertError;
+      settings = created;
+    }
+    $("weekdayTarget").value = settings.weekday_target;
+    $("weekendTarget").value = settings.weekend_target;
+  }
+
+  async function loadRecords() {
+    const { data, error } = await client.from("ride_records")
+      .select("*")
+      .order("ride_date", { ascending: false })
+      .order("id", { ascending: false });
+    if (error) throw error;
+    records = data || [];
+    render();
+  }
+
+  function render() {
+    const month = $("filterMonth").value;
+    const filtered = records.filter(r => !month || r.ride_date.startsWith(month));
+    const grossSum = filtered.reduce((s,r) => s + Number(r.gross), 0);
+    const expenseSum = filtered.reduce((s,r) => s + expense(r), 0);
+    const netSum = grossSum - expenseSum;
+
+    $("grossTotal").textContent = money(grossSum);
+    $("expenseTotal").textContent = money(expenseSum);
+    $("netTotal").textContent = money(netSum);
+
+    const today = localDate();
+    const targetDay = new Date(today + "T12:00:00").getDay();
+    const target = (targetDay === 0 || targetDay === 6)
+      ? Number(settings.weekend_target) : Number(settings.weekday_target);
+    const todayNet = records.filter(r => r.ride_date === today)
+      .reduce((s,r) => s + net(r), 0);
+    $("targetToday").textContent = money(target);
+    $("targetProgress").textContent = target > 0
+      ? `Pendapatan bersih hari ini ${money(todayNet)} dari target ${money(target)} (${Math.floor(todayNet / target * 100)}%).`
+      : `Pendapatan bersih hari ini ${money(todayNet)}. Target belum ditentukan.`;
+
+    $("historySummary").textContent =
+      `${filtered.length} catatan • Bersih periode ini: ${money(netSum)}`;
+    $("emptyHistory").classList.toggle("hidden", filtered.length > 0);
+
+    $("historyBody").innerHTML = filtered.map(r => `
+      <tr>
+        <td>${escapeHtml(r.ride_date)}</td>
+        <td>${escapeHtml(String(r.start_time).slice(0,5))}–${escapeHtml(String(r.end_time).slice(0,5))}</td>
+        <td>${money(r.gross)}</td>
+        <td>${money(expense(r))}</td>
+        <td>${money(net(r))}</td>
+        <td><div class="actions">
+          <button class="small secondary" data-edit="${escapeHtml(r.id)}">Edit</button>
+          <button class="small danger" data-delete="${escapeHtml(r.id)}">Hapus</button>
+        </div></td>
+      </tr>`).join("");
+  }
+
+  function resetRecordForm() {
+    editingId = null;
+    $("recordForm").reset();
+    $("rideDate").value = localDate();
+    $("startTime").value = "17:00";
+    $("endTime").value = "21:00";
+    ["gross","appFee","fuel","food","maintenance","other","distance"]
+      .forEach(id => $(id).value = "0");
+    $("recordTitle").textContent = "Tambah catatan narik";
+    $("saveRecordBtn").textContent = "Simpan catatan";
+    $("cancelEditBtn").classList.add("hidden");
+  }
+
+  async function refresh() {
+    clearMessage("appMessage");
+    try {
+      await loadSettings();
+      await loadRecords();
+    } catch (error) {
+      appNotice("Gagal memuat data: " + error.message);
+    }
+  }
+
+  $("authForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    clearMessage("authMessage");
+    const button = event.submitter;
+    if (button) button.disabled = true;
+    try {
+      const { error } = await client.auth.signInWithPassword({
+        email: $("email").value.trim(),
+        password: $("password").value
+      });
+      if (error) throw error;
+    } catch (error) {
+      message("authMessage", "Login gagal: " + error.message);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+
+  $("signupBtn").addEventListener("click", async () => {
+    clearMessage("authMessage");
+    const email = $("email").value.trim();
+    const password = $("password").value;
+    if (!email || password.length < 6) {
+      message("authMessage", "Isi email dan password minimal 6 karakter terlebih dahulu.");
+      return;
+    }
+    $("signupBtn").disabled = true;
+    try {
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: location.origin + location.pathname
+        }
+      });
+      if (error) throw error;
+      if (!data.session) {
+        message("authMessage", "Pendaftaran berhasil. Periksa email untuk konfirmasi akun, lalu kembali ke aplikasi untuk login.");
+      } else {
+        message("authMessage", "Akun berhasil dibuat.");
+      }
+    } catch (error) {
+      message("authMessage", "Pendaftaran gagal: " + error.message);
+    } finally {
+      $("signupBtn").disabled = false;
+    }
+  });
+
+  $("logoutBtn").addEventListener("click", async () => {
+    const { error } = await client.auth.signOut();
+    if (error) appNotice("Gagal keluar: " + error.message);
+  });
+
+  $("settingsForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const values = {
+      user_id: currentUser.id,
+      weekday_target: numeric("weekdayTarget"),
+      weekend_target: numeric("weekendTarget")
+    };
+    try {
+      const { data, error } = await client.from("user_settings")
+        .upsert(values, { onConflict: "user_id" })
+        .select("weekday_target,weekend_target").single();
+      if (error) throw error;
+      settings = data;
+      render();
+      appNotice("Target pendapatan berhasil disimpan.");
+    } catch (error) {
+      appNotice("Gagal menyimpan target: " + error.message);
+    }
+  });
+
+  $("recordForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    clearMessage("appMessage");
+    const values = recordValues();
+    if (Object.values(values).some(v => v === "" || v === null)) {
+      appNotice("Mohon lengkapi tanggal dan jam.");
+      return;
+    }
+    if (values.end_time < values.start_time) {
+      appNotice("Jam selesai lebih awal daripada jam mulai. Untuk sesi melewati tengah malam, catat sebagai dua sesi.");
+      return;
+    }
+    $("saveRecordBtn").disabled = true;
+    try {
+      let result;
+      if (editingId !== null) {
+        const { error } = await client.from("ride_records")
+          .update(values).eq("id", editingId);
+        result = { error };
+      } else {
+        const { error } = await client.from("ride_records").insert(values);
+        result = { error };
+      }
+      if (result.error) throw result.error;
+      resetRecordForm();
+      await loadRecords();
+      appNotice("Catatan berhasil disimpan ke database online.");
+    } catch (error) {
+      appNotice("Gagal menyimpan catatan: " + error.message);
+    } finally {
+      $("saveRecordBtn").disabled = false;
+    }
+  });
+
+  $("cancelEditBtn").addEventListener("click", resetRecordForm);
+  $("filterMonth").addEventListener("change", render);
+
+  $("historyBody").addEventListener("click", async event => {
+    const editButton = event.target.closest("[data-edit]");
+    const deleteButton = event.target.closest("[data-delete]");
+
+    if (editButton) {
+      const r = records.find(item => String(item.id) === editButton.dataset.edit);
+      if (!r) return;
+      editingId = r.id;
+      $("rideDate").value = r.ride_date;
+      $("serviceType").value = r.service_type;
+      $("startTime").value = String(r.start_time).slice(0,5);
+      $("endTime").value = String(r.end_time).slice(0,5);
+      $("gross").value = r.gross;
+      $("appFee").value = r.app_fee;
+      $("fuel").value = r.fuel;
+      $("food").value = r.food;
+      $("maintenance").value = r.maintenance;
+      $("other").value = r.other;
+      $("distance").value = r.distance_km;
+      $("note").value = r.note || "";
+      $("recordTitle").textContent = "Edit catatan narik";
+      $("saveRecordBtn").textContent = "Simpan perubahan";
+      $("cancelEditBtn").classList.remove("hidden");
+      $("recordTitle").scrollIntoView({ behavior: "smooth" });
+    }
+
+    if (deleteButton) {
+      const id = deleteButton.dataset.delete;
+      if (!confirm("Yakin ingin menghapus catatan ini?")) return;
+      try {
+        const { error } = await client.from("ride_records").delete().eq("id", id);
+        if (error) throw error;
+        records = records.filter(r => String(r.id) !== id);
+        render();
+        appNotice("Catatan berhasil dihapus.");
+      } catch (error) {
+        appNotice("Gagal menghapus catatan: " + error.message);
+      }
+    }
+  });
+
+  $("csvBtn").addEventListener("click", () => {
+    const month = $("filterMonth").value;
+    const filtered = records.filter(r => !month || r.ride_date.startsWith(month));
+    const columns = [
+      ["Tanggal","ride_date"], ["Layanan","service_type"],
+      ["Mulai","start_time"], ["Selesai","end_time"],
+      ["Kotor","gross"], ["Potongan aplikasi","app_fee"],
+      ["Bensin","fuel"], ["Makan","food"],
+      ["Cadangan servis","maintenance"], ["Lainnya","other"],
+      ["Jarak km","distance_km"], ["Catatan","note"]
+    ];
+    const quote = value => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+    const csv = [
+      columns.map(c => quote(c[0])).join(","),
+      ...filtered.map(r => columns.map(c => quote(r[c[1]] )).join(","))
+    ].join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "maxim-tracker-" + (month || localDate()) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  async function start() {
+    $("rideDate").value = localDate();
+    $("startTime").value = "17:00";
+    $("endTime").value = "21:00";
+
+    const config = window.MAXIM_CONFIG;
+    if (!config || !config.url || !config.publishableKey ||
+        config.url.includes("ISI_") || config.publishableKey.includes("ISI_")) {
+      message("authMessage", "Konfigurasi Supabase belum lengkap. Periksa file app-config.js.");
+      return;
+    }
+    if (!window.supabase) {
+      message("authMessage", "Library Supabase gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.");
+      return;
+    }
+
+    client = window.supabase.createClient(config.url, config.publishableKey);
+
+    client.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(session?.user || null);
+      if (session?.user) {
+        setTimeout(() => refresh(), 0);
+      }
+    });
+
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+      message("authMessage", "Gagal memeriksa sesi: " + error.message);
+      return;
+    }
+    setSignedIn(data.session?.user || null);
+    if (data.session?.user) await refresh();
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
