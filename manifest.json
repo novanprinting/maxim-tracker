@@ -13,7 +13,7 @@
   "theme_color": "#12304A",
   "icons": [
     {
-      "src": "/maxim-tracker/icons/icon-192.png",
+      "src": "/maxim-tracker/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
     },
